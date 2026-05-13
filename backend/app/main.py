@@ -41,3 +41,33 @@ def registrar_lectura(lectura: schemas.LecturaCreate, db: Session = Depends(data
     db.add(nueva_lectura)
     db.commit()
     return {"status": "Lectura registrada con éxito"}
+
+# =======================================================
+# RUTAS DE LA SEMANA 6 INTEGRADAS CORRECTAMENTE (EstacionDB)
+# =======================================================
+
+# 1. RUTA PARA ELIMINAR (DELETE) - Requerido para el Swipe-to-Dismiss de Flutter
+@app.delete("/estaciones/{estacion_id}", tags=["SMAT"])
+def eliminar_estacion(estacion_id: int, db: Session = Depends(database.get_db)):
+    # Corregido: Cambiado a models.EstacionDB
+    estacion = db.query(models.EstacionDB).filter(models.EstacionDB.id == estacion_id).first()
+    if not estacion:
+        raise HTTPException(status_code=404, detail="Estación no encontrada")
+    
+    db.delete(estacion)
+    db.commit()
+    return {"message": "Estación eliminada correctamente"}
+
+# 2. RUTA PARA EDITAR (PUT) - Requerido para el cuadro de diálogo de Flutter
+@app.put("/estaciones/{estacion_id}", tags=["SMAT"])
+def editar_estacion(estacion_id: int, nombre: str, ubicacion: str, db: Session = Depends(database.get_db)):
+    # Corregido: Cambiado a models.EstacionDB
+    estacion = db.query(models.EstacionDB).filter(models.EstacionDB.id == estacion_id).first()
+    if not estacion:
+        raise HTTPException(status_code=404, detail="Estación no encontrada")
+    
+    estacion.nombre = nombre
+    estacion.ubicacion = ubicacion
+    db.commit()
+    db.refresh(estacion)
+    return estacion

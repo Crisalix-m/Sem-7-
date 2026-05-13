@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:mobile/models/estacion.dart';
-
-// 1. IMPORTANTE: Agrega este import para que funcione "AuthService()"
 import 'auth_service.dart'; 
 
 class ApiService {
@@ -10,6 +8,7 @@ class ApiService {
   // Si usa Linux Desktop o Web, use 'localhost'.
   final String baseUrl = "http://localhost:8000";
 
+  // Obtener la lista de estaciones
   Future<List<Estacion>> fetchEstaciones() async {
     final response = await http.get(Uri.parse('$baseUrl/estaciones/'));
 
@@ -21,6 +20,7 @@ class ApiService {
     }
   }
 
+  // Crear una nueva estación (POST)
   Future<bool> crearEstacion(String nombre, String ubicacion) async {
     final token = await AuthService().getToken();
     final response = await http.post(
@@ -31,6 +31,33 @@ class ApiService {
       },
       body: jsonEncode({'nombre': nombre, 'ubicacion': ubicacion}),
     );
+    return response.statusCode == 200;
+  }
+
+  // 1. Eliminar una estación (DELETE)
+  Future<bool> eliminarEstacion(int id) async {
+    final token = await AuthService().getToken();
+    final response = await http.delete(
+      Uri.parse('$baseUrl/estaciones/$id'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    return response.statusCode == 200;
+  }
+
+  // 2. Actualizar/Editar una estación (PUT)
+  Future<bool> editarEstacion(int id, String nombre, String ubicacion) async {
+    final token = await AuthService().getToken();
+    
+    // Cambiado: Construimos la URL pasando los parámetros con "?" y "&" para que hagan match con tu función de Python
+    final url = Uri.parse('$baseUrl/estaciones/$id?nombre=${Uri.encodeComponent(nombre)}&ubicacion=${Uri.encodeComponent(ubicacion)}');
+    
+    final response = await http.put(
+      url,
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+    
     return response.statusCode == 200;
   }
 }

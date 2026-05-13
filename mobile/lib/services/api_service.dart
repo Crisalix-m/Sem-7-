@@ -8,15 +8,23 @@ class ApiService {
   // Si usa Linux Desktop o Web, use 'localhost'.
   final String baseUrl = "http://localhost:8000";
 
-  // Obtener la lista de estaciones
+  // 1. OBTENER ESTACIONES - ¡AHORA CON TRY-CATCH Y TIMEOUT!
   Future<List<Estacion>> fetchEstaciones() async {
-    final response = await http.get(Uri.parse('$baseUrl/estaciones/'));
+    try {
+      // Agregamos .timeout() de 5 segundos para evitar esperas infinitas si el servidor cae
+      final response = await http.get(Uri.parse('$baseUrl/estaciones/'))
+          .timeout(const Duration(seconds: 5));
 
-    if (response.statusCode == 200) {
-      List jsonResponse = json.decode(response.body);
-      return jsonResponse.map((data) => Estacion.fromJson(data)).toList();
-    } else {
-      throw Exception('Falla al conectar con el servidor SMAT');
+      if (response.statusCode == 200) {
+        List jsonResponse = json.decode(response.body);
+        return jsonResponse.map((data) => Estacion.fromJson(data)).toList();
+      } else {
+        throw Exception('Error del servidor: ${response.statusCode}');
+      }
+    } catch (e) {
+      // Este catch captura errores de red, fallas de conexión o cortes de servidor
+      // Evita que la App se cierre inesperadamente y envía el mensaje limpio exigido
+      throw Exception('No se pudo conectar con SMAT. ¿Está el servidor activo?');
     }
   }
 
@@ -34,7 +42,7 @@ class ApiService {
     return response.statusCode == 200;
   }
 
-  // 1. Eliminar una estación (DELETE)
+  // Eliminar una estación (DELETE)
   Future<bool> eliminarEstacion(int id) async {
     final token = await AuthService().getToken();
     final response = await http.delete(
@@ -44,11 +52,10 @@ class ApiService {
     return response.statusCode == 200;
   }
 
-  // 2. Actualizar/Editar una estación (PUT)
+  // Actualizar-Editar una estación (PUT)
   Future<bool> editarEstacion(int id, String nombre, String ubicacion) async {
     final token = await AuthService().getToken();
     
-    // Cambiado: Construimos la URL pasando los parámetros con "?" y "&" para que hagan match con tu función de Python
     final url = Uri.parse('$baseUrl/estaciones/$id?nombre=${Uri.encodeComponent(nombre)}&ubicacion=${Uri.encodeComponent(ubicacion)}');
     
     final response = await http.put(
